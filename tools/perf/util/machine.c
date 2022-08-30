@@ -2253,6 +2253,8 @@ struct iterations {
 	u64 cycles;
 };
 
+static int append_inlines(struct callchain_cursor *cursor, struct map_symbol *ms, u64 ip);
+
 static int add_callchain_ip(struct thread *thread,
 			    struct callchain_cursor *cursor,
 			    struct symbol **parent,
@@ -2269,6 +2271,7 @@ static int add_callchain_ip(struct thread *thread,
 	int nr_loop_iter = 0;
 	u64 iter_cycles = 0;
 	const char *srcline = NULL;
+	u64 addr = ip;
 
 	al.filtered = 0;
 	al.sym = NULL;
@@ -2326,6 +2329,12 @@ static int add_callchain_ip(struct thread *thread,
 	ms.maps = al.maps;
 	ms.map = al.map;
 	ms.sym = al.sym;
+
+	if (ms.map) 
+		addr = map__map_ip(ms.map, addr);
+	if (append_inlines(cursor, &ms, ip) == 0)
+		return 0;
+
 	srcline = callchain_srcline(&ms, al.addr);
 	return callchain_cursor_append(cursor, ip, &ms,
 				       branch, flags, nr_loop_iter,
